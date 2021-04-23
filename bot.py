@@ -98,15 +98,14 @@ async def on_message(message):
                     return await message.channel.send("Queues up")
                 return await message.channel.send(embed=emb)
             else:
-                PLAYER['tempe'] = request
-                emb = choose_song_message(request, fetcher.search_term(request))
+                PLAYER['tempe'] = fetcher.search_term(request)
+                emb = choose_song_message(request, PLAYER['tempe'])
                 return await message.channel.send(embed=emb)
 
         if "info" in command:
             emb: Embed = PLAYER['curr']
             emb.set_field_at(2, name="Playlist: ", value=str(len(PLAYER['playlist'])), inline=True)
-            emb.set_field_at(3, name="Looping is on", value=str(PLAYER['loop']), inline=True)
-            emb.set_field_at(4, name="time playing",
+            emb.set_field_at(1, name="time playing",
                              value=str(datetime.timedelta(seconds=(time.time() - PLAYER['timer']).__round__())),
                              inline=True)
 
@@ -135,7 +134,7 @@ async def on_message(message):
                 vc = message.author.voice.channel
                 await vc.connect()
             voice = get(client.voice_clients, guild=message.guild)
-            r = play(fetcher.search(PLAYER['tempe'])[int(request) - 1], voice, message.author.name)
+            r = play(fetcher.search(PLAYER['tempe'][int(request) - 1]), voice, message.author.name)
             if r is None:
                 return await message.channel.send("Queues up")
             return await message.channel.send(embed=PLAYER['curr'])
@@ -151,6 +150,7 @@ async def on_message(message):
 
         if "loop" in command:
             PLAYER['loop'] = not PLAYER['loop']
+            await message.channel.send("Looping ON: " + str(PLAYER['loop']))
 
         if "get_bibtex" in command:
             doi = str(message.content).split(' ')[1]
@@ -179,11 +179,8 @@ async def on_message(message):
             temp = list(tiktaktoe.IndexDict["board"]).copy()
 
             temp[tiktaktoe.IndexDict[int(message.content[1])]] = 'x'
-            print("tmp", temp)
             tiktaktoe.IndexDict['board'] = ''.join(temp)
             response = tiktaktoe.ttt()
-
-            print(tiktaktoe.IndexDict["board"])
 
             response = message.author.name + '  ,' + response.strip('@') + tiktaktoe.string_to_board(
                 tiktaktoe.IndexDict["board"])
@@ -206,7 +203,7 @@ def play(message, voice, author):
                    after=lambda e: playnext(voice, author))
         PLAYER['timer'] = time.time()
         voice.is_playing()
-        embed = song_info_message(author, info['title'], info['thumbnails'][0]['url'], url, info['average_rating'],
+        embed = song_info_message(author, info['title'], info['thumbnails'][0]['url'], url,
                                   info['duration'], info['uploader'])
         PLAYER['curr'] = embed
 
@@ -237,7 +234,7 @@ def playnext(voice, author):
                    after=lambda e: playnext(voice, author))
         PLAYER['timer'] = time.time()
         voice.is_playing()
-        embed = song_info_message(author, info['title'], info['thumbnails'][0]['url'], url, info['average_rating'],
+        embed = song_info_message(author, info['title'], info['thumbnails'][0]['url'], url,
                                   info['duration'], info['uploader'])
         PLAYER['curr'] = embed
 
@@ -248,19 +245,17 @@ def playnext(voice, author):
 
 
 # Message Utility
-def song_info_message(author, title, icon, url, rating, length, maker):
+def song_info_message(author, title, icon, url, length, maker):
     embed = discord.Embed(title=title, url=url, description=maker, color=0x8640b5)
     embed.set_author(
         name=author,
         icon_url="https://banner2.cleanpng.com/20180604/sgx/kisspng-omega-sa-symbol-alpha-and-omega-fortnite-omega-5b14d6630852a4.6777973915280922590341.jpg"
     )
     embed.set_thumbnail(url=icon)
-    embed.add_field(name="Rating", value=rating, inline=True)
     embed.add_field(name="Length  (s)", value=str(datetime.timedelta(seconds=length)), inline=True)
-    embed.add_field(name="Playlist: ", value=str(len(PLAYER['playlist'])), inline=True)
-    embed.add_field(name="Looping is on", value=str(PLAYER['loop']), inline=True)
     embed.add_field(name="time playing",
                     value=str(datetime.timedelta(seconds=(time.time() - PLAYER['timer']).__round__())), inline=True)
+    embed.add_field(name="Playlist: ", value=str(len(PLAYER['playlist'])), inline=True)
     embed.set_footer(text="Youtube Music ♫")
 
     return embed
