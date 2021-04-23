@@ -1,1 +1,2 @@
-# Spitz-Bot-
+# Spitz-Bot
+## Discord Bot
