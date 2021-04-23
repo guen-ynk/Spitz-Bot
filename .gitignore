@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+driver/
+music/
+paper/
+PyPaperBot/
+PyPaperBot.egg-info/
+temp/
 
 # C extensions
 *.so
