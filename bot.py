@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import os
 import time
 from typing import Dict, List, Any, Union
@@ -27,7 +28,8 @@ PLAYER: Dict[str, Union[List[Any], None, bool, int, Embed, str]] = {
     'curr': None,
     'tempe': None,
     'loop': False,
-    'counter': 0
+    'counter': 0,
+    'timer': time.time()
 }
 
 players = {}
@@ -65,7 +67,7 @@ async def on_message(message):
         if "connect" in command:
             vc = message.author.voice.channel
             await vc.connect()
-      
+
         if "cmd" in command:
             return await message.channel.send(
                 """```
@@ -104,6 +106,10 @@ async def on_message(message):
             emb: Embed = PLAYER['curr']
             emb.set_field_at(2, name="Playlist: ", value=str(len(PLAYER['playlist'])), inline=True)
             emb.set_field_at(3, name="Looping is on", value=str(PLAYER['loop']), inline=True)
+            emb.set_field_at(4, name="time playing",
+                             value=str(datetime.timedelta(seconds=(time.time() - PLAYER['timer']).__round__())),
+                             inline=True)
+
             return await message.channel.send(embed=PLAYER['curr'])
 
         if "debug" in command:
@@ -198,6 +204,7 @@ def play(message, voice, author):
             url = info['formats'][0]['url']
         voice.play(FFmpegPCMAudio(url, **yt.FFMPEG_OPTIONS, executable="driver/ffmpeg/bin/ffmpeg.exe"),
                    after=lambda e: playnext(voice, author))
+        PLAYER['timer'] = time.time()
         voice.is_playing()
         embed = song_info_message(author, info['title'], info['thumbnails'][0]['url'], url, info['average_rating'],
                                   info['duration'], info['uploader'])
@@ -228,6 +235,7 @@ def playnext(voice, author):
             url = info['formats'][0]['url']
         voice.play(FFmpegPCMAudio(url, **yt.FFMPEG_OPTIONS, executable="driver/ffmpeg/bin/ffmpeg.exe"),
                    after=lambda e: playnext(voice, author))
+        PLAYER['timer'] = time.time()
         voice.is_playing()
         embed = song_info_message(author, info['title'], info['thumbnails'][0]['url'], url, info['average_rating'],
                                   info['duration'], info['uploader'])
@@ -248,9 +256,11 @@ def song_info_message(author, title, icon, url, rating, length, maker):
     )
     embed.set_thumbnail(url=icon)
     embed.add_field(name="Rating", value=rating, inline=True)
-    embed.add_field(name="Length  (s)", value=length, inline=True)
+    embed.add_field(name="Length  (s)", value=str(datetime.timedelta(seconds=length)), inline=True)
     embed.add_field(name="Playlist: ", value=str(len(PLAYER['playlist'])), inline=True)
     embed.add_field(name="Looping is on", value=str(PLAYER['loop']), inline=True)
+    embed.add_field(name="time playing",
+                    value=str(datetime.timedelta(seconds=(time.time() - PLAYER['timer']).__round__())), inline=True)
     embed.set_footer(text="Youtube Music ♫")
 
     return embed
