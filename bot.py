@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from youtube_dl import YoutubeDL
 
 import PyPaperBot.__main__ as pb
-from bot_package import tiktaktoe, fetcher, mmr, yt
+from bot_package import tiktaktoe, mmr, yt, youtube
 
 # Load PW from .env
 load_dotenv()
@@ -86,7 +86,7 @@ async def on_message(message):
             ```""")
 
         if "play" in command:
-            request = '_'.join(str(message.content).split(' ')[1:])
+            request = '+'.join(str(message.content).split(' ')[1:])
             if "https://" in request:
                 voice = get(client.voice_clients, guild=message.guild)
                 if voice is None:
@@ -98,7 +98,7 @@ async def on_message(message):
                     return await message.channel.send("Queues up")
                 return await message.channel.send(embed=emb)
             else:
-                PLAYER['tempe'] = fetcher.search_term(request)
+                PLAYER['tempe'] = youtube.YoutubeSearch(request).videos
                 emb = choose_song_message(request, PLAYER['tempe'])
                 return await message.channel.send(embed=emb)
 
@@ -134,7 +134,7 @@ async def on_message(message):
                 vc = message.author.voice.channel
                 await vc.connect()
             voice = get(client.voice_clients, guild=message.guild)
-            r = play(fetcher.search(PLAYER['tempe'][int(request) - 1]), voice, message.author.name)
+            r = play(PLAYER['tempe'][int(request) - 1]["url"], voice, message.author.name)
             if r is None:
                 return await message.channel.send("Queues up")
             return await message.channel.send(embed=PLAYER['curr'])
@@ -264,15 +264,15 @@ def song_info_message(author, title, icon, url, length, maker):
 def choose_song_message(title, res):
     embed = discord.Embed(title="Search", description=title, color=0x8220b5)
     if len(res) >= 1:
-        embed.add_field(value=res[0], name="1", inline=False)
+        embed.add_field(value=res[0]["title"], name="1", inline=False)
     if len(res) >= 2:
-        embed.add_field(value=res[1], name="2", inline=False)
+        embed.add_field(value=res[1]["title"], name="2", inline=False)
     if len(res) >= 3:
-        embed.add_field(value=res[2], name="3", inline=False)
+        embed.add_field(value=res[2]["title"], name="3", inline=False)
     if len(res) >= 4:
-        embed.add_field(value=res[3], name="4", inline=False)
+        embed.add_field(value=res[3]["title"], name="4", inline=False)
     if len(res) >= 5:
-        embed.add_field(value=res[4], name="5", inline=False)
+        embed.add_field(value=res[4]["title"], name="5", inline=False)
     embed.set_footer(text="Choose with !take <number>")
 
     return embed
